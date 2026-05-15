@@ -1,12 +1,12 @@
 <template>
   <el-container class="app-container">
-    <el-aside :width="sidebarCollapsed ? '50px' : '300px'" class="sidebar">
-      <div class="sidebar-toggle" @click="sidebarCollapsed = !sidebarCollapsed">
-        <el-icon v-if="sidebarCollapsed"><Right /></el-icon>
-        <el-icon v-else><Left /></el-icon>
+    <el-aside :width="sidebarCollapsed ? '60px' : '300px'" class="sidebar">
+      <div class="sidebar-toggle" @click="toggleSidebar">
+        <el-icon v-if="sidebarCollapsed" class="toggle-icon"><DArrowRight /></el-icon>
+        <el-icon v-else class="toggle-icon"><DArrowLeft /></el-icon>
       </div>
       
-      <div class="sidebar-content" v-if="!sidebarCollapsed">
+      <div class="sidebar-content" v-show="!sidebarCollapsed">
         <h2 class="sidebar-title">📚 课表管理</h2>
         
         <el-divider />
@@ -20,7 +20,7 @@
             :on-change="handleFileChange"
             :show-file-list="false"
           >
-            <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+            <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">
               拖放或点击上传课表
             </div>
@@ -104,7 +104,7 @@
           <h3 class="section-title">周次导航</h3>
           <div class="week-nav">
             <el-button size="small" @click="prevWeek" :disabled="currentWeek <= 1">
-              <el-icon><arrow-left /></el-icon>
+              <el-icon><ArrowLeft /></el-icon>
               上一周
             </el-button>
             <div class="week-display">
@@ -112,7 +112,7 @@
             </div>
             <el-button size="small" @click="nextWeek">
               下一周
-              <el-icon><arrow-right /></el-icon>
+              <el-icon><ArrowRight /></el-icon>
             </el-button>
           </div>
           
@@ -123,7 +123,7 @@
             style="margin-top: 10px"
             @click="goToCurrentWeek"
           >
-            <el-icon><calendar /></el-icon>
+            <el-icon><Calendar /></el-icon>
             回到本周
           </el-button>
           
@@ -148,6 +148,16 @@
           </div>
         </div>
       </div>
+      
+      <!-- 收起时显示的小图标 -->
+      <div v-if="sidebarCollapsed" class="sidebar-collapsed-icons">
+        <div class="icon-tooltip" @click="triggerUpload">
+          <el-icon><UploadFilled /></el-icon>
+        </div>
+        <div class="icon-tooltip" @click="goToCurrentWeek">
+          <el-icon><Calendar /></el-icon>
+        </div>
+      </div>
     </el-aside>
     
     <el-main class="main-content">
@@ -168,48 +178,51 @@
           </h1>
         </div>
         
-        <table class="schedule-table">
-          <thead>
-            <tr>
-              <th class="time-col">时间</th>
-              <th 
-                v-for="dayIdx in 7" 
-                :key="dayIdx"
-                :class="{ 'today-col': isToday(dayIdx - 1) }"
-              >
-                <div class="day-name">{{ WEEKDAYS[dayIdx - 1] }}</div>
-                <div class="day-date">{{ getWeekDate(dayIdx - 1) }}</div>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="slot in 6" :key="slot">
-              <td class="time-col">
-                <div class="slot-time">{{ SLOT_TIMES[slot - 1] }}</div>
-                <div class="slot-num">第{{ slot * 2 - 1 }},{{ slot * 2 }}节</div>
-              </td>
-              <td 
-                v-for="dayIdx in 7" 
-                :key="dayIdx"
-                :class="{ 'today-col': isToday(dayIdx - 1) }"
-              >
-                <div class="slot-content">
-                  <div 
-                    v-for="(course, courseIdx) in getCoursesAt(dayIdx - 1, slot - 1)" 
-                    :key="courseIdx"
-                    class="course-card"
-                  >
-                    <div class="course-name" :title="course.name">{{ truncateText(course.name, 10) }}</div>
-                    <div class="course-detail">
-                      <span class="teacher" v-if="course.teacher" :title="course.teacher">👨‍🏫 {{ truncateText(course.teacher, 6) }}</span>
-                      <span class="room" v-if="course.room" :title="course.room">📍 {{ truncateText(course.room, 6) }}</span>
+        <div class="schedule-table-wrapper">
+          <table class="schedule-table">
+            <thead>
+              <tr>
+                <th class="time-col">时间</th>
+                <th 
+                  v-for="dayIdx in 7" 
+                  :key="dayIdx"
+                  :class="{ 'today-col': isToday(dayIdx - 1) }"
+                >
+                  <div class="day-name">{{ WEEKDAYS[dayIdx - 1] }}</div>
+                  <div class="day-date">{{ getWeekDate(dayIdx - 1) }}</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="slot in 6" :key="slot">
+                <td class="time-col">
+                  <div class="slot-time">{{ SLOT_TIMES[slot - 1] }}</div>
+                  <div class="slot-num">第{{ slot * 2 - 1 }},{{ slot * 2 }}节</div>
+                </td>
+                <td 
+                  v-for="dayIdx in 7" 
+                  :key="dayIdx"
+                  :class="{ 'today-col': isToday(dayIdx - 1) }"
+                >
+                  <div class="slot-content">
+                    <div 
+                      v-for="(course, courseIdx) in getCoursesAt(dayIdx - 1, slot - 1)" 
+                      :key="courseIdx"
+                      class="course-card"
+                      :title="`${course.name}\n${course.teacher || ''}\n${course.room || ''}`"
+                    >
+                      <div class="course-name">{{ truncateText(course.name, 8) }}</div>
+                      <div class="course-detail">
+                        <span class="teacher" v-if="course.teacher">👨‍🏫 {{ truncateText(course.teacher, 5) }}</span>
+                        <span class="room" v-if="course.room">📍 {{ truncateText(course.room, 5) }}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
         
         <el-collapse class="course-list-collapse">
           <el-collapse-item title="📋 本周课程详情">
@@ -261,6 +274,10 @@ const showNameInput = ref(false)
 const newScheduleName = ref('')
 const pendingFile = ref<File | null>(null)
 const sidebarCollapsed = ref(false)
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
 
 function truncateText(text: string, maxLength: number): string {
   if (!text) return ''
@@ -498,34 +515,70 @@ function jumpToDate(date: string) {
   background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
   color: white;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   transition: width 0.3s ease;
+  flex-shrink: 0;
 }
 
 .sidebar-toggle {
   position: absolute;
   top: 50%;
-  right: -12px;
+  right: -16px;
   transform: translateY(-50%);
-  width: 24px;
-  height: 48px;
+  width: 32px;
+  height: 60px;
   background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 12px 12px 0;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 100;
   color: white;
   transition: all 0.3s;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
 }
 
 .sidebar-toggle:hover {
   background: linear-gradient(180deg, #2a2a4e 0%, #26315e 100%);
+  right: -18px;
+}
+
+.toggle-icon {
+  font-size: 20px;
 }
 
 .sidebar-content {
   padding: 20px;
+}
+
+.sidebar-collapsed-icons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 40px;
+  gap: 20px;
+}
+
+.icon-tooltip {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.icon-tooltip:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.icon-tooltip .el-icon {
+  font-size: 20px;
 }
 
 .sidebar-title {
@@ -632,6 +685,7 @@ function jumpToDate(date: string) {
   overflow-y: auto;
   background: #f5f7fa;
   flex: 1;
+  min-width: 0;
 }
 
 .empty-state {
@@ -658,6 +712,7 @@ function jumpToDate(date: string) {
   display: flex;
   align-items: baseline;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .week-info {
@@ -672,53 +727,61 @@ function jumpToDate(date: string) {
   font-weight: normal;
 }
 
+.schedule-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
 .schedule-table {
   width: 100%;
+  min-width: 800px;
   table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 4px;
+  border-spacing: 6px;
 }
 
 .schedule-table th,
 .schedule-table td {
-  padding: 8px;
+  padding: 10px;
   text-align: center;
-  border-radius: 8px;
-  width: calc((100% - 120px) / 7);
+  border-radius: 12px;
+  width: calc((100% - 140px) / 7);
 }
 
 .schedule-table th {
   background: linear-gradient(180deg, #f5f7fa 0%, #e8ecf1 100%);
   font-weight: 600;
   color: #303133;
+  height: 70px;
 }
 
 .schedule-table .time-col {
   background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
   color: white;
-  width: 120px;
-  min-width: 120px;
+  width: 140px;
+  min-width: 140px;
 }
 
 .slot-time {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
 }
 
 .slot-num {
-  font-size: 11px;
+  font-size: 12px;
   opacity: 0.8;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .day-name {
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .day-date {
   font-size: 12px;
   color: #909399;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .today-col {
@@ -733,45 +796,51 @@ function jumpToDate(date: string) {
 .schedule-table td {
   background: #fafbfc;
   vertical-align: top;
-  height: 100px;
-  min-height: 100px;
+  height: 120px;
+  min-height: 120px;
 }
 
 .slot-content {
-  min-height: 90px;
+  min-height: 110px;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .course-card {
   background: linear-gradient(135deg, #e8f4fd 0%, #d4ecfc 100%);
-  border-left: 3px solid #409eff;
-  padding: 6px 8px;
-  margin-bottom: 4px;
-  border-radius: 4px;
+  border-left: 5px solid #409eff;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 8px;
   text-align: left;
   overflow: hidden;
+  flex-shrink: 0;
+  min-height: 60px;
 }
 
 .course-name {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   color: #2c3e50;
-  margin-bottom: 2px;
+  margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.5;
 }
 
 .course-detail {
-  font-size: 10px;
+  font-size: 13px;
   color: #6c757d;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 .course-detail .teacher {
-  margin-right: 6px;
+  margin-right: 10px;
 }
 
 .course-list-collapse {
